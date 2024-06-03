@@ -56,7 +56,15 @@ async function run() {
       const allSessions = await sessionCollection.find({}).toArray();
       res.send(allSessions);
      })
-
+     app.get('/sessions/:id', async (req, res) => {
+      const getID = req.params.id;
+      const query =  {
+        _id:new ObjectId(getID),
+      }
+      console.log(query)
+      const allSessions = await sessionCollection.find(query).toArray();
+      res.send(allSessions);
+     })
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"

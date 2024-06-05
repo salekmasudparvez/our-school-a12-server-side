@@ -35,6 +35,8 @@ async function run() {
     const sessionCollection = db.collection("sessions");
     const bookedSessionCollection = db.collection("bookedSessions");
     const reviewsCollection = db.collection("reviews");
+    const notesCollection = db.collection("notes");
+    const pendingSessionCollection = db.collection("pendingSession");
 
     //handle users collection
     app.post("/users", async (req, res) => {
@@ -104,6 +106,67 @@ async function run() {
       const result = await reviewsCollection.insertOne(newReview);
       res.send(result);
     });
+    //get and post and update notes
+    app.get("/notes/:email", async (req, res) => {
+      const getEmail= req.params.email;
+      const allNotes = await notesCollection.find({email:getEmail}).toArray();
+      res.send(allNotes);
+    });
+    app.get("/noteUpdate/:id", async (req, res) => {
+      const getId= req.params.id;
+      const allNotes = await notesCollection.findOne({_id:new ObjectId(getId)})
+      res.send(allNotes);
+    });
+
+    app.patch("/noteUpdate/:id", async (req, res) => {
+      const getId = req.params.id;
+      const obj = req.body;
+      const updateDoc = {
+        $set: {
+          description: obj.description,
+          title: obj.title
+        }
+      };
+      const filter = { _id: new ObjectId(getId) };
+      const result = await notesCollection.updateOne(
+        filter,
+        updateDoc
+      );
+      res.send(result);
+    });
+
+    app.post('/notes', async (req, res)=>{
+      const newNote = req.body;
+  
+      const result = await notesCollection.insertOne(newNote);
+      res.send(result);
+    })
+    app.delete('/notes/:id', async (req, res)=>{
+      const getId = req.params.id;
+      const result = await notesCollection.deleteOne({_id:new ObjectId(getId)});
+      res.send(result);
+    })
+     //sessions get post from tuitor
+     app.post('/pendingSessions', async (req, res) => {
+      const newSession = req.body;
+      console.log(newSession);
+      const result = await pendingSessionCollection.insertOne(newSession);
+      res.send(result);
+    })
+    app.get('/pendingSessions/:email', async(req,res)=>{
+      const getEmail =req.params.email;
+      // console.log(getEmail,'line158')
+      const pendingSessions = await pendingSessionCollection.find({TutorEmail:getEmail}).toArray();
+      res.send(pendingSessions);
+    })
+    app.get('/aceptsession/:email', async(req,res)=>{
+      const getEmail =req.params.email;
+      console.log(getEmail,'line164')
+      const pendingSessions = await sessionCollection.find({TutorEmail:getEmail}).toArray();
+      res.send(pendingSessions);
+    })
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(

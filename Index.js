@@ -37,11 +37,16 @@ async function run() {
     const reviewsCollection = db.collection("reviews");
     const notesCollection = db.collection("notes");
     const pendingSessionCollection = db.collection("pendingSession");
+    const materialsCollection = db.collection("materials");
 
     //handle users collection
     app.post("/users", async (req, res) => {
       const newUser = req.body;
-      // console.log(newUser);
+      const findOldUser = await usersCollection.findOne({email:newUser.email})
+      if (findOldUser) {
+        res.status(400).send("User already exist")
+        return;
+      }
       const result = await usersCollection.insertOne(newUser);
       res.send(result);
     });
@@ -52,18 +57,54 @@ async function run() {
       const singleUser = await usersCollection.findOne({ email: currentEmail });
       res.send(singleUser);
     });
+    app.get("/allusers", async (req, res) => {
+      const getSearch = req.query.search;
+      const getEmail = req.query.email;
+      let query ={}
+      if(getSearch){
+        query={name:getSearch} 
+      }
+      if(getEmail){
+        query={email:getEmail}
+      }
+
+      const allUsers = await usersCollection.find(query).toArray();
+      res.send(allUsers);
+    });
+    app.patch('/allusers', async (req, res) => {
+      const obj = req.body;
+      const query = {
+        email: obj.email,
+      };
+      const updateDoc={
+        $set:{role:obj.updateRole}
+      }
+      console.log(obj,'line65')
+      const allUsers = await usersCollection.updateOne(query,updateDoc);
+      res.send(allUsers);
+    })
 
     //session data part
     app.get("/sessions", async (req, res) => {
       const allSessions = await sessionCollection.find({}).toArray();
       res.send(allSessions);
     });
-    app.get("/sessions/:id", async (req, res) => {
+
+    app.get("/session/:id", async (req, res) => {
       const getID = req.params.id;
       const query = {
         _id: new ObjectId(getID),
       };
       const allSessions = await sessionCollection.findOne(query);
+      res.send(allSessions);
+    });
+    //tutor call approved session
+    app.get("/approvedsessions/:email", async (req, res) => {
+      const getEmail = req.params.email;
+      const query = {
+        TutorEmail: getEmail,
+      };
+      const allSessions = await sessionCollection.find(query).toArray();;
       res.send(allSessions);
     });
 
@@ -96,13 +137,13 @@ async function run() {
     //get reviews and post review
     app.get("/reviews/:id", async (req, res) => {
       const id= req.params.id;
-      console.log(id,'line97')
+      //console.log(id,'line97')
       const allReviews = await reviewsCollection.find({reviewId:id}).toArray();
       res.send(allReviews);
     });
     app.post("/reviews", async (req, res) => {
       const newReview = req.body;
-      console.log(newReview);
+      //console.log(newReview);
       const result = await reviewsCollection.insertOne(newReview);
       res.send(result);
     });
@@ -146,25 +187,119 @@ async function run() {
       const result = await notesCollection.deleteOne({_id:new ObjectId(getId)});
       res.send(result);
     })
-     //sessions get post from tuitor
+     //sessions get, post from tuitor....
+
      app.post('/pendingSessions', async (req, res) => {
       const newSession = req.body;
-      console.log(newSession);
+      // console.log(newSession);
       const result = await pendingSessionCollection.insertOne(newSession);
       res.send(result);
     })
-    app.get('/pendingSessions/:email', async(req,res)=>{
+   
+    app.get('/aceptsession/:email', async(req,res)=>{
+      //tutor calling
       const getEmail =req.params.email;
-      // console.log(getEmail,'line158')
+      // console.log(getEmail,'line164')
       const pendingSessions = await pendingSessionCollection.find({TutorEmail:getEmail}).toArray();
       res.send(pendingSessions);
     })
-    app.get('/aceptsession/:email', async(req,res)=>{
-      const getEmail =req.params.email;
-      console.log(getEmail,'line164')
-      const pendingSessions = await sessionCollection.find({TutorEmail:getEmail}).toArray();
-      res.send(pendingSessions);
+    //tutor send call for recheck
+    app.patch('/aceptsession', async (req, res) => {
+      
+      const obj = req.body;
+      console.log(obj,'line210')
+      const updateDoc = {
+        $set: {
+          Status: "pending"
+        }
+      };
+      const filter = { _id: new ObjectId(obj.id) };
+      const result = await pendingSessionCollection.updateOne(
+        filter,
+        updateDoc
+      );
+      res.send(result);
+    });
+    //get all sessions from pending sessions
+    app.get('/pendingsessions', async (req, res) =>{
+      const allSessions = await pendingSessionCollection.find({}).toArray();;
+      res.send(allSessions);
     })
+    //get all sessions from pendingsessionscollection by status
+    app.get('/allsessions', async (req, res) =>{
+      const getID = req.query.id;
+      console.log(typeof getID, getID);
+      let query = {}
+      if(getID==="0"){
+        query = {
+          Status: "pending"
+        }
+      }
+      if(getID==="1"){
+        query = {
+          Status: "rejected"
+        }
+      }
+      if(getID==="2"){
+        query = {
+          Status: "approved"
+        }
+      }
+      const allSessions = await pendingSessionCollection.find(query).toArray();;
+      res.send(allSessions);
+    })
+    //admin change status
+    app.patch('/allsessionsstatus', async (req, res) => {
+      const getObject = req.body;
+      //console.log(getObject,'line-230')
+      const session = getObject.sessionObject
+      if(getObject.status ==="approved"){
+        //console.log('home e post koresi')
+        session.sessionId = getObject.id;
+        delete session._id;
+        session.RegistrationFee=getObject.fee;
+        console.log(session,'line258')
+        const sessionsApproved = await sessionCollection.insertOne(session)
+      }
+      const allSessions = await pendingSessionCollection.updateOne({_id:new ObjectId(getObject.id)},{$set:{Status:getObject.status,RegistrationFee:getObject.fee}});
+      res.send(allSessions);
+    })
+
+
+    //manage materials from tutor
+    app.post('/materials', async(req,res)=>{
+      const newMaterial = req.body;
+      // console.log(newMaterial,'line173');
+      const result = await materialsCollection.insertOne(newMaterial);
+      res.send(result);
+    })
+    app.get('/materials/:email',async(req,res)=>{
+      const getEmail = req.params.email;
+      const materials = await materialsCollection.find({ tutorEmail:getEmail}).toArray();
+      res.send(materials);
+    })
+    app.delete('/materials/:id',async(req,res)=>{
+      const getId = req.params.id;
+      const materials = await materialsCollection.deleteOne({ sessionId:getId})
+      res.send(materials);
+    })
+    app.patch('/material',async(req,res)=>{
+      const obj = req.body;
+      const updateDoc = {
+        $set: {
+          materialsUrl: obj.materialsUrl,
+          imageUrl: obj.imageUrl
+        }
+      };
+
+      const filter = { sessionId:obj.sessionId };
+      const result = await materialsCollection.updateOne(
+        filter,
+        updateDoc
+      );
+      res.send(result);
+    })
+   
 
 
 

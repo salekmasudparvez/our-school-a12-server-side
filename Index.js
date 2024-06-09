@@ -104,10 +104,16 @@ async function run() {
       res.send(allUsers);
     });
 
-    //session data part
+    //session data part and paginations
     app.get("/sessions", async (req, res) => {
-      const allSessions = await sessionCollection.find({}).toArray();
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      const allSessions = await sessionCollection.find({}).skip(page * size).limit(size).toArray();
       res.send(allSessions);
+    });
+    app.get("/sessionsCount", async (req, res) => {
+      const count = await sessionCollection.estimatedDocumentCount();
+      res.send({ count });
     });
 
     app.get("/session/:id", async (req, res) => {
@@ -370,7 +376,7 @@ async function run() {
       res.send(result);
     });
 
-    //mterial get students
+    //mterial get in homePAGE students
     app.get("/singleMaterial/:id", async (req, res) => {
       const getId = req.params.id;
       //console.log(getId,'line358')
@@ -379,6 +385,20 @@ async function run() {
       });
       res.send(materials);
     });
+    //mterial get in DASHBOARD students
+    app.get('/studyMaterials/:email',async(req,res)=>{
+      const getEmail = req.params.email;
+      let query = {}
+      const findBooked = await bookedSessionCollection.findOne({
+        studentEmail:getEmail})
+      if(findBooked){
+        query={sessionId:findBooked?.BookId}
+      } 
+      const materials = await materialsCollection
+       .find(query)
+       .toArray();
+      res.send(materials);
+    })
     //material handle-Admin
 
     app.get("/allMaterials", async (req, res) => {

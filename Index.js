@@ -42,9 +42,11 @@ async function run() {
     //handle users collection
     app.post("/users", async (req, res) => {
       const newUser = req.body;
-      const findOldUser = await usersCollection.findOne({email:newUser.email})
+      const findOldUser = await usersCollection.findOne({
+        email: newUser.email,
+      });
       if (findOldUser) {
-        res.status(400).send("User already exist")
+        res.status(400).send("User already exist");
         return;
       }
       const result = await usersCollection.insertOne(newUser);
@@ -60,29 +62,29 @@ async function run() {
     app.get("/allusers", async (req, res) => {
       const getSearch = req.query.search;
       const getEmail = req.query.email;
-      let query ={}
-      if(getSearch){
-        query={name:getSearch} 
+      let query = {};
+      if (getSearch) {
+        query = { name: getSearch };
       }
-      if(getEmail){
-        query={email:getEmail}
+      if (getEmail) {
+        query = { email: getEmail };
       }
 
       const allUsers = await usersCollection.find(query).toArray();
       res.send(allUsers);
     });
-    app.patch('/allusers', async (req, res) => {
+    app.patch("/allusers", async (req, res) => {
       const obj = req.body;
       const query = {
         email: obj.email,
       };
-      const updateDoc={
-        $set:{role:obj.updateRole}
-      }
-      console.log(obj,'line65')
-      const allUsers = await usersCollection.updateOne(query,updateDoc);
+      const updateDoc = {
+        $set: { role: obj.updateRole },
+      };
+      console.log(obj, "line65");
+      const allUsers = await usersCollection.updateOne(query, updateDoc);
       res.send(allUsers);
-    })
+    });
 
     //session data part
     app.get("/sessions", async (req, res) => {
@@ -104,7 +106,7 @@ async function run() {
       const query = {
         TutorEmail: getEmail,
       };
-      const allSessions = await sessionCollection.find(query).toArray();;
+      const allSessions = await sessionCollection.find(query).toArray();
       res.send(allSessions);
     });
 
@@ -123,8 +125,11 @@ async function run() {
     });
     app.get("/bookedsessiontable/:email", async (req, res) => {
       const email = req.params.email;
-      const allSessions = await bookedSessionCollection.find({
-        studentEmail:email}).toArray();
+      const allSessions = await bookedSessionCollection
+        .find({
+          studentEmail: email,
+        })
+        .toArray();
       res.send(allSessions);
     });
 
@@ -136,9 +141,11 @@ async function run() {
     });
     //get reviews and post review
     app.get("/reviews/:id", async (req, res) => {
-      const id= req.params.id;
+      const id = req.params.id;
       //console.log(id,'line97')
-      const allReviews = await reviewsCollection.find({reviewId:id}).toArray();
+      const allReviews = await reviewsCollection
+        .find({ reviewId: id })
+        .toArray();
       res.send(allReviews);
     });
     app.post("/reviews", async (req, res) => {
@@ -149,13 +156,17 @@ async function run() {
     });
     //get and post and update notes
     app.get("/notes/:email", async (req, res) => {
-      const getEmail= req.params.email;
-      const allNotes = await notesCollection.find({email:getEmail}).toArray();
+      const getEmail = req.params.email;
+      const allNotes = await notesCollection
+        .find({ email: getEmail })
+        .toArray();
       res.send(allNotes);
     });
     app.get("/noteUpdate/:id", async (req, res) => {
-      const getId= req.params.id;
-      const allNotes = await notesCollection.findOne({_id:new ObjectId(getId)})
+      const getId = req.params.id;
+      const allNotes = await notesCollection.findOne({
+        _id: new ObjectId(getId),
+      });
       res.send(allNotes);
     });
 
@@ -165,53 +176,53 @@ async function run() {
       const updateDoc = {
         $set: {
           description: obj.description,
-          title: obj.title
-        }
+          title: obj.title,
+        },
       };
       const filter = { _id: new ObjectId(getId) };
-      const result = await notesCollection.updateOne(
-        filter,
-        updateDoc
-      );
+      const result = await notesCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
-    app.post('/notes', async (req, res)=>{
+    app.post("/notes", async (req, res) => {
       const newNote = req.body;
-  
+
       const result = await notesCollection.insertOne(newNote);
       res.send(result);
-    })
-    app.delete('/notes/:id', async (req, res)=>{
+    });
+    app.delete("/notes/:id", async (req, res) => {
       const getId = req.params.id;
-      const result = await notesCollection.deleteOne({_id:new ObjectId(getId)});
+      const result = await notesCollection.deleteOne({
+        _id: new ObjectId(getId),
+      });
       res.send(result);
-    })
-     //sessions get, post from tuitor....
+    });
+    //sessions get, post from tuitor....
 
-     app.post('/pendingSessions', async (req, res) => {
+    app.post("/pendingSessions", async (req, res) => {
       const newSession = req.body;
       // console.log(newSession);
       const result = await pendingSessionCollection.insertOne(newSession);
       res.send(result);
-    })
-   
-    app.get('/aceptsession/:email', async(req,res)=>{
+    });
+
+    app.get("/aceptsession/:email", async (req, res) => {
       //tutor calling
-      const getEmail =req.params.email;
+      const getEmail = req.params.email;
       // console.log(getEmail,'line164')
-      const pendingSessions = await pendingSessionCollection.find({TutorEmail:getEmail}).toArray();
+      const pendingSessions = await pendingSessionCollection
+        .find({ TutorEmail: getEmail })
+        .toArray();
       res.send(pendingSessions);
-    })
+    });
     //tutor send call for recheck
-    app.patch('/aceptsession', async (req, res) => {
-      
+    app.patch("/aceptsession", async (req, res) => {
       const obj = req.body;
-      console.log(obj,'line210')
+      console.log(obj, "line210");
       const updateDoc = {
         $set: {
-          Status: "pending"
-        }
+          Status: "pending",
+        },
       };
       const filter = { _id: new ObjectId(obj.id) };
       const result = await pendingSessionCollection.updateOne(
@@ -221,87 +232,156 @@ async function run() {
       res.send(result);
     });
     //get all sessions from pending sessions
-    app.get('/pendingsessions', async (req, res) =>{
-      const allSessions = await pendingSessionCollection.find({}).toArray();;
+    app.get("/pendingsessions", async (req, res) => {
+      const allSessions = await pendingSessionCollection.find({}).toArray();
       res.send(allSessions);
-    })
+    });
     //get all sessions from pendingsessionscollection by status
-    app.get('/allsessions', async (req, res) =>{
+    app.get("/allsessions", async (req, res) => {
       const getID = req.query.id;
       console.log(typeof getID, getID);
-      let query = {}
-      if(getID==="0"){
+      let query = {};
+      if (getID === "0") {
         query = {
-          Status: "pending"
-        }
+          Status: "pending",
+        };
       }
-      if(getID==="1"){
+      if (getID === "1") {
         query = {
-          Status: "rejected"
-        }
+          Status: "rejected",
+        };
       }
-      if(getID==="2"){
+      if (getID === "2") {
         query = {
-          Status: "approved"
-        }
+          Status: "approved",
+        };
       }
-      const allSessions = await pendingSessionCollection.find(query).toArray();;
+      const allSessions = await pendingSessionCollection.find(query).toArray();
       res.send(allSessions);
-    })
+    });
     //admin change status
-    app.patch('/allsessionsstatus', async (req, res) => {
+    app.patch("/allsessionsstatus", async (req, res) => {
       const getObject = req.body;
       //console.log(getObject,'line-230')
-      const session = getObject.sessionObject
-      if(getObject.status ==="approved"){
+      const session = getObject.sessionObject;
+      if (getObject.status === "approved") {
         //console.log('home e post koresi')
         session.sessionId = getObject.id;
         delete session._id;
-        session.RegistrationFee=getObject.fee;
-        console.log(session,'line258')
-        const sessionsApproved = await sessionCollection.insertOne(session)
+        session.RegistrationFee = getObject.fee;
+        console.log(session, "line258");
+        const sessionsApproved = await sessionCollection.insertOne(session);
       }
-      const allSessions = await pendingSessionCollection.updateOne({_id:new ObjectId(getObject.id)},{$set:{Status:getObject.status,RegistrationFee:getObject.fee}});
+      const allSessions = await pendingSessionCollection.updateOne(
+        { _id: new ObjectId(getObject.id) },
+        { $set: { Status: getObject.status, RegistrationFee: getObject.fee } }
+      );
       res.send(allSessions);
-    })
+    });
 
+    //admin approved sessions update , get and delete
 
+    app.patch("/sessionsDetails", async (req, res) => {
+      const getObject = req.body;
+      const filter = { _id: new ObjectId(getObject.id) };
+      const filterSessionCollection = { sessionId: getObject.id };
+      delete getObject.id;
+
+      const updateSessionCollection = await sessionCollection.updateOne(
+        filterSessionCollection,
+        { $set: getObject }
+      );
+
+      // Update pending session collection call tutor
+      const allSessions = await pendingSessionCollection.updateOne(filter, {
+        $set: getObject,
+      });
+      res.status(200).send({ message: "Update successful" });
+    });
+    app.get("/sessionsDetails/:id", async (req, res) => {
+      const getID = req.params.id;
+      const allSessions = await pendingSessionCollection.findOne({
+        _id: new ObjectId(getID),
+      });
+      res.send(allSessions);
+    });
+
+    app.delete("/deleteSession/:id", async (req, res) => {
+      const getId = req.params.id;
+      console.log(getId,'line310')
+      const sessionDelete = await sessionCollection.deleteOne({
+        sessionId: getId,
+      });
+      const pendingSessionDelete = await pendingSessionCollection.deleteOne({
+        _id: new ObjectId(getId),
+      });
+      res.send(pendingSessionDelete);
+    });
     //manage materials from tutor
-    app.post('/materials', async(req,res)=>{
+    app.post("/materials", async (req, res) => {
       const newMaterial = req.body;
       // console.log(newMaterial,'line173');
       const result = await materialsCollection.insertOne(newMaterial);
       res.send(result);
-    })
-    app.get('/materials/:email',async(req,res)=>{
+    });
+    app.get("/materials/:email", async (req, res) => {
       const getEmail = req.params.email;
-      const materials = await materialsCollection.find({ tutorEmail:getEmail}).toArray();
+      const materials = await materialsCollection
+        .find({ tutorEmail: getEmail })
+        .toArray();
       res.send(materials);
-    })
-    app.delete('/materials/:id',async(req,res)=>{
+    });
+    app.delete("/materials/:id", async (req, res) => {
       const getId = req.params.id;
-      const materials = await materialsCollection.deleteOne({ sessionId:getId})
+      const materials = await materialsCollection.deleteOne({
+        sessionId: getId,
+      });
       res.send(materials);
-    })
-    app.patch('/material',async(req,res)=>{
+    });
+    app.patch("/material", async (req, res) => {
       const obj = req.body;
       const updateDoc = {
         $set: {
           materialsUrl: obj.materialsUrl,
-          imageUrl: obj.imageUrl
-        }
+          imageUrl: obj.imageUrl,
+        },
       };
 
-      const filter = { sessionId:obj.sessionId };
-      const result = await materialsCollection.updateOne(
-        filter,
-        updateDoc
-      );
+      const filter = { sessionId: obj.sessionId };
+      const result = await materialsCollection.updateOne(filter, updateDoc);
       res.send(result);
+    });
+
+    //mterial get students  
+    app.get('/singleMaterial/:id',async(req,res)=>{
+      const getId = req.params.id;
+      //console.log(getId,'line358')
+      const materials = await materialsCollection.findOne({
+        sessionId: getId,
+      });
+      res.send(materials);
     })
-   
+    //material handle-Admin
 
+    app.get('/allMaterials', async (req, res) =>{
+      const allMaterials = await materialsCollection.find({}).toArray();
+      res.send(allMaterials);
+    })
+    app.get('/classEndDate/:id',async(req,res) =>{
+      const getId = req.params.id;
+      //console.log(getId,'line372')
+      const sessions = await sessionCollection.findOne({
+        _id:new ObjectId(getId),
+      })
+      res.send(sessions);
+    })
 
+    app.delete('/deleteMaterials/:id',async(req,res)=>{
+      const getId = req.params.id;
+      console.log(getId,'<<<<<')
+      const allMaterials = await materialsCollection.deleteOne({_id:new ObjectId(getId)});
+      res.send(allMaterials);
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -315,7 +395,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("amazon is busy shopping");
+  res.send("OurSchool is busy shopping");
 });
 
 app.listen(port, () => {

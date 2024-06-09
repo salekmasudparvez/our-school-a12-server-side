@@ -4,9 +4,10 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 
 const corsOptions = {
-  origin: ["http://localhost:5173"],
+  origin: ["http://localhost:5173", "http://localhost:5000"],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -39,6 +40,23 @@ async function run() {
     const pendingSessionCollection = db.collection("pendingSession");
     const materialsCollection = db.collection("materials");
 
+
+    //jwt related api
+    app.post("/jwt", (req, res) => {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).send({ error: "Email is required" });
+      }
+      console.log(email, "jwt-----", process.env.ACCESS_TOKEN_SECRET);
+      const token = jwt.sign(
+        { email: email },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: "365d",
+        }
+      );
+      res.send({ token });
+    });
     //handle users collection
     app.post("/users", async (req, res) => {
       const newUser = req.body;
@@ -73,7 +91,7 @@ async function run() {
       const allUsers = await usersCollection.find(query).toArray();
       res.send(allUsers);
     });
-    app.patch("/allusers", async (req, res) => {
+    app.patch("/allusers",async (req, res) => {
       const obj = req.body;
       const query = {
         email: obj.email,
@@ -308,7 +326,7 @@ async function run() {
 
     app.delete("/deleteSession/:id", async (req, res) => {
       const getId = req.params.id;
-      console.log(getId,'line310')
+      console.log(getId, "line310");
       const sessionDelete = await sessionCollection.deleteOne({
         sessionId: getId,
       });
@@ -352,36 +370,38 @@ async function run() {
       res.send(result);
     });
 
-    //mterial get students  
-    app.get('/singleMaterial/:id',async(req,res)=>{
+    //mterial get students
+    app.get("/singleMaterial/:id", async (req, res) => {
       const getId = req.params.id;
       //console.log(getId,'line358')
       const materials = await materialsCollection.findOne({
         sessionId: getId,
       });
       res.send(materials);
-    })
+    });
     //material handle-Admin
 
-    app.get('/allMaterials', async (req, res) =>{
+    app.get("/allMaterials", async (req, res) => {
       const allMaterials = await materialsCollection.find({}).toArray();
       res.send(allMaterials);
-    })
-    app.get('/classEndDate/:id',async(req,res) =>{
+    });
+    app.get("/classEndDate/:id", async (req, res) => {
       const getId = req.params.id;
       //console.log(getId,'line372')
       const sessions = await sessionCollection.findOne({
-        _id:new ObjectId(getId),
-      })
+        _id: new ObjectId(getId),
+      });
       res.send(sessions);
-    })
+    });
 
-    app.delete('/deleteMaterials/:id',async(req,res)=>{
+    app.delete("/deleteMaterials/:id", async (req, res) => {
       const getId = req.params.id;
-      console.log(getId,'<<<<<')
-      const allMaterials = await materialsCollection.deleteOne({_id:new ObjectId(getId)});
+      console.log(getId, "<<<<<");
+      const allMaterials = await materialsCollection.deleteOne({
+        _id: new ObjectId(getId),
+      });
       res.send(allMaterials);
-    })
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(

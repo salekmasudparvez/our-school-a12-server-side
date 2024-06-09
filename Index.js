@@ -103,6 +103,18 @@ async function run() {
       const allUsers = await usersCollection.updateOne(query, updateDoc);
       res.send(allUsers);
     });
+    //get ALl tutor to show in home
+    app.get('/alltutors',async(req,res)=>{
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      const allTutors = await usersCollection.find({role:'Teacher'}).skip(page * size).limit(size).toArray();
+      res.send(allTutors);
+    })
+    app.get("/tutorsCount", async (req, res) => {
+      const tutor = await usersCollection.find({role:'Teacher'}).toArray();
+      const count = await tutor.length;
+      res.send({ count });
+    });
 
     //session data part and paginations
     app.get("/sessions", async (req, res) => {

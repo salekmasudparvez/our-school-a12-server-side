@@ -7,7 +7,10 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5000","server-study.vercel.app"],
+  origin: ["http://localhost:5173",
+     "http://localhost:5000",
+     "https://server-study.vercel.app",
+    "https://sm-ourschool.netlify.app"],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -456,7 +459,7 @@ async function run() {
       res.send(allMaterials);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    //await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );

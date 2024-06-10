@@ -39,6 +39,7 @@ async function run() {
     const notesCollection = db.collection("notes");
     const pendingSessionCollection = db.collection("pendingSession");
     const materialsCollection = db.collection("materials");
+    const feedBackCollection = db.collection("feedBack");
 
 
     //jwt related api
@@ -261,6 +262,7 @@ async function run() {
         },
       };
       const filter = { _id: new ObjectId(obj.id) };
+      const deleteFeedBack = await feedBackCollection.deleteOne({sessionId:obj.id})
       const result = await pendingSessionCollection.updateOne(
         filter,
         updateDoc
@@ -305,8 +307,18 @@ async function run() {
         session.sessionId = getObject.id;
         delete session._id;
         session.RegistrationFee = getObject.fee;
-        console.log(session, "line258");
+        //console.log(session, "line258");
         const sessionsApproved = await sessionCollection.insertOne(session);
+      }
+      if (getObject.status === "rejected") {
+        const feedBackObj = {
+          rejectReason:getObject.feedBackPart.reason,
+          feedBack:getObject.feedBackPart.feedback,
+          sessionId:getObject.id,
+        }
+        console.log(feedBackObj,'line318')
+        const sessionFeedBack = await feedBackCollection.insertOne(feedBackObj);
+        //res.send({status:"rejected"})
       }
       const allSessions = await pendingSessionCollection.updateOne(
         { _id: new ObjectId(getObject.id) },
@@ -314,7 +326,16 @@ async function run() {
       );
       res.send(allSessions);
     });
-
+     //feedback get and delete tutor
+     app.get("/feedback/:id", async (req, res) => {
+      const getID = req.params.id;
+      console.log(getID,'line331')
+      const Feedback = await feedBackCollection.findOne({sessionId: getID });
+      if(!Feedback){
+        return res.status(400).send({ error: "_Id is required" })
+      }
+      res.send(Feedback);
+    });
     //admin approved sessions update , get and delete
 
     app.patch("/sessionsDetails", async (req, res) => {

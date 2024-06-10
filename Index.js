@@ -452,14 +452,11 @@ async function run() {
     //mterial get in DASHBOARD students
     app.get("/studyMaterials/:email", async (req, res) => {
       const getEmail = req.params.email;
-      let query = {};
       const findBooked = await bookedSessionCollection.findOne({
         studentEmail: getEmail,
       });
-      if (findBooked) {
-        query = { sessionId: findBooked?.BookId };
-      }
-      const materials = await materialsCollection.find(query).toArray();
+     
+      const materials = await materialsCollection.find({ sessionId: findBooked?.BookId }).toArray();
       res.send(materials);
     });
     //material handle-Admin

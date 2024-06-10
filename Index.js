@@ -7,7 +7,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5000"],
+  origin: ["http://localhost:5173", "http://localhost:5000","server-study.vercel.app"],
   credentials: true,
   optionSuccessStatus: 200,
 };

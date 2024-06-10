@@ -7,10 +7,12 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 const corsOptions = {
-  origin: ["http://localhost:5173",
-     "http://localhost:5000",
-     "https://server-study.vercel.app",
-    "https://sm-ourschool.netlify.app"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5000",
+    "https://server-study.vercel.app",
+    "https://sm-ourschool.netlify.app",
+  ],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -43,7 +45,6 @@ async function run() {
     const pendingSessionCollection = db.collection("pendingSession");
     const materialsCollection = db.collection("materials");
     const feedBackCollection = db.collection("feedBack");
-
 
     //jwt related api
     app.post("/jwt", (req, res) => {
@@ -95,7 +96,7 @@ async function run() {
       const allUsers = await usersCollection.find(query).toArray();
       res.send(allUsers);
     });
-    app.patch("/allusers",async (req, res) => {
+    app.patch("/allusers", async (req, res) => {
       const obj = req.body;
       const query = {
         email: obj.email,
@@ -108,14 +109,18 @@ async function run() {
       res.send(allUsers);
     });
     //get ALl tutor to show in home
-    app.get('/alltutors',async(req,res)=>{
+    app.get("/alltutors", async (req, res) => {
       const page = parseInt(req.query.page);
       const size = parseInt(req.query.size);
-      const allTutors = await usersCollection.find({role:'Teacher'}).skip(page * size).limit(size).toArray();
+      const allTutors = await usersCollection
+        .find({ role: "Teacher" })
+        .skip(page * size)
+        .limit(size)
+        .toArray();
       res.send(allTutors);
-    })
+    });
     app.get("/tutorsCount", async (req, res) => {
-      const tutor = await usersCollection.find({role:'Teacher'}).toArray();
+      const tutor = await usersCollection.find({ role: "Teacher" }).toArray();
       const count = await tutor.length;
       res.send({ count });
     });
@@ -124,7 +129,11 @@ async function run() {
     app.get("/sessions", async (req, res) => {
       const page = parseInt(req.query.page);
       const size = parseInt(req.query.size);
-      const allSessions = await sessionCollection.find({}).skip(page * size).limit(size).toArray();
+      const allSessions = await sessionCollection
+        .find({})
+        .skip(page * size)
+        .limit(size)
+        .toArray();
       res.send(allSessions);
     });
     app.get("/sessionsCount", async (req, res) => {
@@ -186,6 +195,23 @@ async function run() {
       const allReviews = await reviewsCollection
         .find({ reviewId: id })
         .toArray();
+      res.send(allReviews);
+    });
+    app.get("/reviewAvg/:id", async (req, res) => {
+      //getavaragte
+      const id = req.params.id;
+      //console.log(id,'line97')
+      const allReviews = await reviewsCollection.aggregate([
+        {
+          $match: { reviewId: id }
+        },
+        {
+          $group: {
+            _id: null,
+            averageRating: { $avg: "$rating" }
+          }
+        }
+      ]).toArray();
       res.send(allReviews);
     });
     app.post("/reviews", async (req, res) => {
@@ -265,7 +291,9 @@ async function run() {
         },
       };
       const filter = { _id: new ObjectId(obj.id) };
-      const deleteFeedBack = await feedBackCollection.deleteOne({sessionId:obj.id})
+      const deleteFeedBack = await feedBackCollection.deleteOne({
+        sessionId: obj.id,
+      });
       const result = await pendingSessionCollection.updateOne(
         filter,
         updateDoc
@@ -315,11 +343,11 @@ async function run() {
       }
       if (getObject.status === "rejected") {
         const feedBackObj = {
-          rejectReason:getObject.feedBackPart.reason,
-          feedBack:getObject.feedBackPart.feedback,
-          sessionId:getObject.id,
-        }
-        console.log(feedBackObj,'line318')
+          rejectReason: getObject.feedBackPart.reason,
+          feedBack: getObject.feedBackPart.feedback,
+          sessionId: getObject.id,
+        };
+        console.log(feedBackObj, "line318");
         const sessionFeedBack = await feedBackCollection.insertOne(feedBackObj);
         //res.send({status:"rejected"})
       }
@@ -329,13 +357,13 @@ async function run() {
       );
       res.send(allSessions);
     });
-     //feedback get and delete tutor
-     app.get("/feedback/:id", async (req, res) => {
+    //feedback get and delete tutor
+    app.get("/feedback/:id", async (req, res) => {
       const getID = req.params.id;
-      console.log(getID,'line331')
-      const Feedback = await feedBackCollection.findOne({sessionId: getID });
-      if(!Feedback){
-        return res.status(400).send({ error: "_Id is required" })
+      console.log(getID, "line331");
+      const Feedback = await feedBackCollection.findOne({ sessionId: getID });
+      if (!Feedback) {
+        return res.status(400).send({ error: "_Id is required" });
       }
       res.send(Feedback);
     });
@@ -422,19 +450,18 @@ async function run() {
       res.send(materials);
     });
     //mterial get in DASHBOARD students
-    app.get('/studyMaterials/:email',async(req,res)=>{
+    app.get("/studyMaterials/:email", async (req, res) => {
       const getEmail = req.params.email;
-      let query = {}
+      let query = {};
       const findBooked = await bookedSessionCollection.findOne({
-        studentEmail:getEmail})
-      if(findBooked){
-        query={sessionId:findBooked?.BookId}
-      } 
-      const materials = await materialsCollection
-       .find(query)
-       .toArray();
+        studentEmail: getEmail,
+      });
+      if (findBooked) {
+        query = { sessionId: findBooked?.BookId };
+      }
+      const materials = await materialsCollection.find(query).toArray();
       res.send(materials);
-    })
+    });
     //material handle-Admin
 
     app.get("/allMaterials", async (req, res) => {

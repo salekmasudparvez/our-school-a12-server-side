@@ -5,6 +5,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const stripe = require('stripe')(`${process.env.STRIPE_SECRET_KEY}`);
 
 const corsOptions = {
   origin: [
@@ -45,6 +46,7 @@ async function run() {
     const pendingSessionCollection = db.collection("pendingSession");
     const materialsCollection = db.collection("materials");
     const feedBackCollection = db.collection("feedBack");
+    const paymentsCollection = db.collection("payments");
 
     //jwt related api
     app.post("/jwt", (req, res) => {
@@ -108,6 +110,31 @@ async function run() {
       const allUsers = await usersCollection.updateOne(query, updateDoc);
       res.send(allUsers);
     });
+    //payments
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log(amount, 'amount inside the intent')
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+     
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    });
+    app.post('/payments',async(req,res) => {
+      const newPayment = req.body;
+      console.log(newPayment)
+      const result1 = await bookedSessionCollection.insertOne(newPayment?.session);
+      const result = await paymentsCollection.insertOne(newPayment?.bill);
+      
+        res.send(result);
+  
+    })
     //get ALl tutor to show in home
     app.get("/alltutors", async (req, res) => {
       const page = parseInt(req.query.page);
@@ -170,7 +197,11 @@ async function run() {
       };
       // console.log(query);
       const singleSession = await bookedSessionCollection.findOne(query);
-      res.send(!!singleSession);
+      //console.log(singleSession,"line200");
+      //console.log(singleSession,'line201')
+    
+        res.send(singleSession)
+    
     });
     app.get("/bookedsessiontable/:email", async (req, res) => {
       const email = req.params.email;
@@ -184,7 +215,7 @@ async function run() {
 
     app.post("/bookedsession", async (req, res) => {
       const newSession = req.body;
-      // console.log(newSession);
+       console.log(newSession ,'line218');
       const result = await bookedSessionCollection.insertOne(newSession);
       res.send(result);
     });
